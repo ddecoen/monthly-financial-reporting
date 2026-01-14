@@ -8,6 +8,12 @@ Go tool to merge multiple NetSuite Income Statement exports into a single Excel 
 - Handles Excel 2003 XML format (.xls files from NetSuite)
 - Handles modern .xlsx format
 - Creates properly named sheets: "IS - YTD", "IS - Quarterly", "IS - Monthly"
+- **Professional formatting:**
+  - Bold headers with gray background
+  - Borders around all cells
+  - Auto-adjusted column widths (15 characters)
+  - Frozen top row for easy scrolling
+  - Board presentation-ready output
 
 ## Quick Start
 
