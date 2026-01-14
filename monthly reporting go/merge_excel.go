@@ -145,6 +145,43 @@ func processXMLExcel(sourcePath string, dest *excelize.File, newSheetName string
 
 	worksheet := workbook.Worksheets[0]
 
+	// Create styles for formatting
+	headerStyle, err := dest.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Bold: true,
+			Size: 11,
+		},
+		Fill: excelize.Fill{
+			Type:    "pattern",
+			Color:   []string{"#D3D3D3"},
+			Pattern: 1,
+		},
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create header style: %w", err)
+	}
+
+	normalStyle, err := dest.NewStyle(&excelize.Style{
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create normal style: %w", err)
+	}
+
+	// Track max column for width adjustment
+	maxCol := 0
+
 	// Write data to new sheet
 	currentRow := 1
 	for _, row := range worksheet.Table.Rows {
@@ -167,12 +204,39 @@ func processXMLExcel(sourcePath string, dest *excelize.File, newSheetName string
 				if err := dest.SetCellValue(newSheetName, cellName, value); err != nil {
 					return fmt.Errorf("failed to set cell value: %w", err)
 				}
+
+				// Apply style
+				if currentRow == 1 {
+					dest.SetCellStyle(newSheetName, cellName, cellName, headerStyle)
+				} else {
+					dest.SetCellStyle(newSheetName, cellName, cellName, normalStyle)
+				}
+			}
+
+			if currentCol > maxCol {
+				maxCol = currentCol
 			}
 
 			currentCol++
 		}
 		currentRow++
 	}
+
+	// Auto-adjust column widths
+	for col := 1; col <= maxCol; col++ {
+		colName, _ := excelize.ColumnNumberToName(col)
+		dest.SetColWidth(newSheetName, colName, colName, 15)
+	}
+
+	// Freeze the top row
+	dest.SetPanes(newSheetName, &excelize.Panes{
+		Freeze:      true,
+		Split:       false,
+		XSplit:      0,
+		YSplit:      1,
+		TopLeftCell: "A2",
+		ActivePane:  "bottomLeft",
+	})
 
 	// Set the first sheet as active
 	if idx == 1 {
@@ -209,6 +273,43 @@ func copySheet(sourcePath string, dest *excelize.File, newSheetName string) erro
 		return fmt.Errorf("failed to read rows: %w", err)
 	}
 
+	// Create styles for formatting
+	headerStyle, err := dest.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Bold: true,
+			Size: 11,
+		},
+		Fill: excelize.Fill{
+			Type:    "pattern",
+			Color:   []string{"#D3D3D3"},
+			Pattern: 1,
+		},
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create header style: %w", err)
+	}
+
+	normalStyle, err := dest.NewStyle(&excelize.Style{
+		Border: []excelize.Border{
+			{Type: "left", Color: "000000", Style: 1},
+			{Type: "top", Color: "000000", Style: 1},
+			{Type: "bottom", Color: "000000", Style: 1},
+			{Type: "right", Color: "000000", Style: 1},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create normal style: %w", err)
+	}
+
+	// Track max column for width adjustment
+	maxCol := 0
+
 	// Copy data row by row
 	for rowIdx, row := range rows {
 		for colIdx, cellValue := range row {
@@ -219,8 +320,35 @@ func copySheet(sourcePath string, dest *excelize.File, newSheetName string) erro
 			if err := dest.SetCellValue(newSheetName, cell, cellValue); err != nil {
 				return fmt.Errorf("failed to set cell value: %w", err)
 			}
+
+			// Apply style
+			if rowIdx == 0 {
+				dest.SetCellStyle(newSheetName, cell, cell, headerStyle)
+			} else {
+				dest.SetCellStyle(newSheetName, cell, cell, normalStyle)
+			}
+
+			if colIdx+1 > maxCol {
+				maxCol = colIdx + 1
+			}
 		}
 	}
+
+	// Auto-adjust column widths
+	for col := 1; col <= maxCol; col++ {
+		colName, _ := excelize.ColumnNumberToName(col)
+		dest.SetColWidth(newSheetName, colName, colName, 15)
+	}
+
+	// Freeze the top row
+	dest.SetPanes(newSheetName, &excelize.Panes{
+		Freeze:      true,
+		Split:       false,
+		XSplit:      0,
+		YSplit:      1,
+		TopLeftCell: "A2",
+		ActivePane:  "bottomLeft",
+	})
 
 	// Set the first sheet as active
 	if idx == 1 {
