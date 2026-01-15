@@ -145,38 +145,81 @@ func processXMLExcel(sourcePath string, dest *excelize.File, newSheetName string
 
 	worksheet := workbook.Worksheets[0]
 
-	// Create styles for formatting
-	headerStyle, err := dest.NewStyle(&excelize.Style{
+	// Create styles matching Q42025-Income_Statement.xlsx formatting
+	titleStyle, err := dest.NewStyle(&excelize.Style{
 		Font: &excelize.Font{
 			Bold: true,
-			Size: 11,
+			Size: 12,
+		},
+		Alignment: &excelize.Alignment{
+			Horizontal: "center",
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create title style: %w", err)
+	}
+
+	columnHeaderLeftStyle, err := dest.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Bold: true,
+			Size: 7,
 		},
 		Fill: excelize.Fill{
 			Type:    "pattern",
-			Color:   []string{"#D3D3D3"},
+			Color:   []string{"D0D0D0"},
 			Pattern: 1,
 		},
-		Border: []excelize.Border{
-			{Type: "left", Color: "000000", Style: 1},
-			{Type: "top", Color: "000000", Style: 1},
-			{Type: "bottom", Color: "000000", Style: 1},
-			{Type: "right", Color: "000000", Style: 1},
+		Alignment: &excelize.Alignment{
+			Horizontal: "left",
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create header style: %w", err)
+		return fmt.Errorf("failed to create column header left style: %w", err)
 	}
 
-	normalStyle, err := dest.NewStyle(&excelize.Style{
-		Border: []excelize.Border{
-			{Type: "left", Color: "000000", Style: 1},
-			{Type: "top", Color: "000000", Style: 1},
-			{Type: "bottom", Color: "000000", Style: 1},
-			{Type: "right", Color: "000000", Style: 1},
+	columnHeaderRightStyle, err := dest.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Bold: true,
+			Size: 7,
+		},
+		Fill: excelize.Fill{
+			Type:    "pattern",
+			Color:   []string{"D0D0D0"},
+			Pattern: 1,
+		},
+		Alignment: &excelize.Alignment{
+			Horizontal: "right",
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create normal style: %w", err)
+		return fmt.Errorf("failed to create column header right style: %w", err)
+	}
+
+	dataLeftStyle, err := dest.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Bold: true,
+			Size: 8,
+		},
+		Alignment: &excelize.Alignment{
+			Horizontal: "left",
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create data left style: %w", err)
+	}
+
+	dataRightStyle, err := dest.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Bold: true,
+			Size: 8,
+		},
+		Alignment: &excelize.Alignment{
+			Horizontal: "right",
+			Vertical:   "center",
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create data right style: %w", err)
 	}
 
 	// Track max column for width adjustment
@@ -205,11 +248,30 @@ func processXMLExcel(sourcePath string, dest *excelize.File, newSheetName string
 					return fmt.Errorf("failed to set cell value: %w", err)
 				}
 
-				// Apply style
-				if currentRow == 1 {
-					dest.SetCellStyle(newSheetName, cellName, cellName, headerStyle)
-				} else {
-					dest.SetCellStyle(newSheetName, cellName, cellName, normalStyle)
+				// Apply formatting based on row and column
+				var styleID int
+				switch {
+				case currentRow >= 1 && currentRow <= 4:
+					// Title rows (company name, report name, date range)
+					styleID = titleStyle
+				case currentRow == 7:
+					// Column header row
+					if currentCol == 1 {
+						styleID = columnHeaderLeftStyle
+					} else {
+						styleID = columnHeaderRightStyle
+					}
+				case currentRow >= 8:
+					// Data rows
+					if currentCol == 1 {
+						styleID = dataLeftStyle
+					} else {
+						styleID = dataRightStyle
+					}
+				}
+
+				if styleID != 0 {
+					dest.SetCellStyle(newSheetName, cellName, cellName, styleID)
 				}
 			}
 
@@ -222,19 +284,17 @@ func processXMLExcel(sourcePath string, dest *excelize.File, newSheetName string
 		currentRow++
 	}
 
-	// Auto-adjust column widths
-	for col := 1; col <= maxCol; col++ {
-		colName, _ := excelize.ColumnNumberToName(col)
-		dest.SetColWidth(newSheetName, colName, colName, 15)
-	}
+	// Set column widths to match reference file
+	dest.SetColWidth(newSheetName, "A", "A", 46.25)
+	dest.SetColWidth(newSheetName, "B", "B", 15.25)
 
-	// Freeze the top row
+	// Freeze at row 8 (after the header row)
 	dest.SetPanes(newSheetName, &excelize.Panes{
 		Freeze:      true,
 		Split:       false,
 		XSplit:      0,
-		YSplit:      1,
-		TopLeftCell: "A2",
+		YSplit:      7,
+		TopLeftCell: "A8",
 		ActivePane:  "bottomLeft",
 	})
 
@@ -273,38 +333,81 @@ func copySheet(sourcePath string, dest *excelize.File, newSheetName string) erro
 		return fmt.Errorf("failed to read rows: %w", err)
 	}
 
-	// Create styles for formatting
-	headerStyle, err := dest.NewStyle(&excelize.Style{
+	// Create styles matching Q42025-Income_Statement.xlsx formatting
+	titleStyle, err := dest.NewStyle(&excelize.Style{
 		Font: &excelize.Font{
 			Bold: true,
-			Size: 11,
+			Size: 12,
+		},
+		Alignment: &excelize.Alignment{
+			Horizontal: "center",
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create title style: %w", err)
+	}
+
+	columnHeaderLeftStyle, err := dest.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Bold: true,
+			Size: 7,
 		},
 		Fill: excelize.Fill{
 			Type:    "pattern",
-			Color:   []string{"#D3D3D3"},
+			Color:   []string{"D0D0D0"},
 			Pattern: 1,
 		},
-		Border: []excelize.Border{
-			{Type: "left", Color: "000000", Style: 1},
-			{Type: "top", Color: "000000", Style: 1},
-			{Type: "bottom", Color: "000000", Style: 1},
-			{Type: "right", Color: "000000", Style: 1},
+		Alignment: &excelize.Alignment{
+			Horizontal: "left",
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create header style: %w", err)
+		return fmt.Errorf("failed to create column header left style: %w", err)
 	}
 
-	normalStyle, err := dest.NewStyle(&excelize.Style{
-		Border: []excelize.Border{
-			{Type: "left", Color: "000000", Style: 1},
-			{Type: "top", Color: "000000", Style: 1},
-			{Type: "bottom", Color: "000000", Style: 1},
-			{Type: "right", Color: "000000", Style: 1},
+	columnHeaderRightStyle, err := dest.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Bold: true,
+			Size: 7,
+		},
+		Fill: excelize.Fill{
+			Type:    "pattern",
+			Color:   []string{"D0D0D0"},
+			Pattern: 1,
+		},
+		Alignment: &excelize.Alignment{
+			Horizontal: "right",
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create normal style: %w", err)
+		return fmt.Errorf("failed to create column header right style: %w", err)
+	}
+
+	dataLeftStyle, err := dest.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Bold: true,
+			Size: 8,
+		},
+		Alignment: &excelize.Alignment{
+			Horizontal: "left",
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create data left style: %w", err)
+	}
+
+	dataRightStyle, err := dest.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Bold: true,
+			Size: 8,
+		},
+		Alignment: &excelize.Alignment{
+			Horizontal: "right",
+			Vertical:   "center",
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create data right style: %w", err)
 	}
 
 	// Track max column for width adjustment
@@ -312,8 +415,10 @@ func copySheet(sourcePath string, dest *excelize.File, newSheetName string) erro
 
 	// Copy data row by row
 	for rowIdx, row := range rows {
+		currentRow := rowIdx + 1
 		for colIdx, cellValue := range row {
-			cell, err := excelize.CoordinatesToCellName(colIdx+1, rowIdx+1)
+			currentCol := colIdx + 1
+			cell, err := excelize.CoordinatesToCellName(currentCol, currentRow)
 			if err != nil {
 				return fmt.Errorf("failed to get cell name: %w", err)
 			}
@@ -321,32 +426,49 @@ func copySheet(sourcePath string, dest *excelize.File, newSheetName string) erro
 				return fmt.Errorf("failed to set cell value: %w", err)
 			}
 
-			// Apply style
-			if rowIdx == 0 {
-				dest.SetCellStyle(newSheetName, cell, cell, headerStyle)
-			} else {
-				dest.SetCellStyle(newSheetName, cell, cell, normalStyle)
+			// Apply formatting based on row and column
+			var styleID int
+			switch {
+			case currentRow >= 1 && currentRow <= 4:
+				// Title rows (company name, report name, date range)
+				styleID = titleStyle
+			case currentRow == 7:
+				// Column header row
+				if currentCol == 1 {
+					styleID = columnHeaderLeftStyle
+				} else {
+					styleID = columnHeaderRightStyle
+				}
+			case currentRow >= 8:
+				// Data rows
+				if currentCol == 1 {
+					styleID = dataLeftStyle
+				} else {
+					styleID = dataRightStyle
+				}
 			}
 
-			if colIdx+1 > maxCol {
-				maxCol = colIdx + 1
+			if styleID != 0 {
+				dest.SetCellStyle(newSheetName, cell, cell, styleID)
+			}
+
+			if currentCol > maxCol {
+				maxCol = currentCol
 			}
 		}
 	}
 
-	// Auto-adjust column widths
-	for col := 1; col <= maxCol; col++ {
-		colName, _ := excelize.ColumnNumberToName(col)
-		dest.SetColWidth(newSheetName, colName, colName, 15)
-	}
+	// Set column widths to match reference file
+	dest.SetColWidth(newSheetName, "A", "A", 46.25)
+	dest.SetColWidth(newSheetName, "B", "B", 15.25)
 
-	// Freeze the top row
+	// Freeze at row 8 (after the header row)
 	dest.SetPanes(newSheetName, &excelize.Panes{
 		Freeze:      true,
 		Split:       false,
 		XSplit:      0,
-		YSplit:      1,
-		TopLeftCell: "A2",
+		YSplit:      7,
+		TopLeftCell: "A8",
 		ActivePane:  "bottomLeft",
 	})
 
