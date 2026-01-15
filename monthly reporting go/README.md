@@ -18,7 +18,9 @@ Go tool to merge multiple NetSuite Income Statement exports into a single Excel 
     - Right-aligned for amount column
   - **Data rows** (row 8+): Bold size 8
     - Left-aligned for account names
-    - Right-aligned for amounts
+    - Right-aligned for amounts with currency formatting
+    - **Number format**: `$#,##0.00` with thousands separators
+    - Negative numbers shown in parentheses: `($1,234.56)`
   - **Column widths**: A=46.25, B=15.25 (optimized for financial statements)
   - **Frozen panes** at row 8 for easy scrolling
   - Board presentation-ready output
