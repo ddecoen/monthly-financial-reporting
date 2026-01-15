@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/xuri/excelize/v2"
@@ -245,8 +246,24 @@ func processXMLExcel(sourcePath string, dest *excelize.File, newSheetName string
 			// Set cell value
 			value := strings.TrimSpace(cell.Data.Value)
 			if value != "" {
-				if err := dest.SetCellValue(newSheetName, cellName, value); err != nil {
-					return fmt.Errorf("failed to set cell value: %w", err)
+				// Try to parse as number for column B (amounts)
+				if currentCol == 2 && currentRow >= 8 {
+					if numValue, err := strconv.ParseFloat(value, 64); err == nil {
+						// It's a number - set as numeric value
+						if err := dest.SetCellValue(newSheetName, cellName, numValue); err != nil {
+							return fmt.Errorf("failed to set cell value: %w", err)
+						}
+					} else {
+						// Not a number - set as string
+						if err := dest.SetCellValue(newSheetName, cellName, value); err != nil {
+							return fmt.Errorf("failed to set cell value: %w", err)
+						}
+					}
+				} else {
+					// Non-amount columns - set as string
+					if err := dest.SetCellValue(newSheetName, cellName, value); err != nil {
+						return fmt.Errorf("failed to set cell value: %w", err)
+					}
 				}
 
 				// Apply formatting based on row and column
@@ -424,8 +441,25 @@ func copySheet(sourcePath string, dest *excelize.File, newSheetName string) erro
 			if err != nil {
 				return fmt.Errorf("failed to get cell name: %w", err)
 			}
-			if err := dest.SetCellValue(newSheetName, cell, cellValue); err != nil {
-				return fmt.Errorf("failed to set cell value: %w", err)
+
+			// Try to parse as number for column B (amounts) in data rows
+			if currentCol == 2 && currentRow >= 8 && cellValue != "" {
+				if numValue, err := strconv.ParseFloat(cellValue, 64); err == nil {
+					// It's a number - set as numeric value
+					if err := dest.SetCellValue(newSheetName, cell, numValue); err != nil {
+						return fmt.Errorf("failed to set cell value: %w", err)
+					}
+				} else {
+					// Not a number - set as string
+					if err := dest.SetCellValue(newSheetName, cell, cellValue); err != nil {
+						return fmt.Errorf("failed to set cell value: %w", err)
+					}
+				}
+			} else {
+				// All other cells - set as is
+				if err := dest.SetCellValue(newSheetName, cell, cellValue); err != nil {
+					return fmt.Errorf("failed to set cell value: %w", err)
+				}
 			}
 
 			// Apply formatting based on row and column
