@@ -246,8 +246,8 @@ func processXMLExcel(sourcePath string, dest *excelize.File, newSheetName string
 			// Set cell value
 			value := strings.TrimSpace(cell.Data.Value)
 			if value != "" {
-				// Try to parse as number for column B (amounts)
-				if currentCol == 2 && currentRow >= 8 {
+				// Try to parse as number for all columns except the first (amounts in row 8+)
+				if currentCol >= 2 && currentRow >= 8 {
 					if numValue, err := strconv.ParseFloat(value, 64); err == nil {
 						// It's a number - set as numeric value
 						if err := dest.SetCellValue(newSheetName, cellName, numValue); err != nil {
@@ -260,7 +260,7 @@ func processXMLExcel(sourcePath string, dest *excelize.File, newSheetName string
 						}
 					}
 				} else {
-					// Non-amount columns - set as string
+					// Non-amount columns or non-data rows - set as string
 					if err := dest.SetCellValue(newSheetName, cellName, value); err != nil {
 						return fmt.Errorf("failed to set cell value: %w", err)
 					}
@@ -272,15 +272,15 @@ func processXMLExcel(sourcePath string, dest *excelize.File, newSheetName string
 				case currentRow >= 1 && currentRow <= 4:
 					// Title rows (company name, report name, date range)
 					styleID = titleStyle
-				case currentRow == 7:
-					// Column header row
+				case currentRow == 7 || currentRow == 8:
+					// Column header rows (row 7 and row 8 for multi-column reports)
 					if currentCol == 1 {
 						styleID = columnHeaderLeftStyle
 					} else {
 						styleID = columnHeaderRightStyle
 					}
-				case currentRow >= 8:
-					// Data rows
+				case currentRow >= 9:
+					// Data rows (start at row 9 for multi-column reports)
 					if currentCol == 1 {
 						styleID = dataLeftStyle
 					} else {
@@ -442,8 +442,8 @@ func copySheet(sourcePath string, dest *excelize.File, newSheetName string) erro
 				return fmt.Errorf("failed to get cell name: %w", err)
 			}
 
-			// Try to parse as number for column B (amounts) in data rows
-			if currentCol == 2 && currentRow >= 8 && cellValue != "" {
+			// Try to parse as number for all amount columns (col 2+) in data rows
+			if currentCol >= 2 && currentRow >= 8 && cellValue != "" {
 				if numValue, err := strconv.ParseFloat(cellValue, 64); err == nil {
 					// It's a number - set as numeric value
 					if err := dest.SetCellValue(newSheetName, cell, numValue); err != nil {
@@ -468,15 +468,15 @@ func copySheet(sourcePath string, dest *excelize.File, newSheetName string) erro
 			case currentRow >= 1 && currentRow <= 4:
 				// Title rows (company name, report name, date range)
 				styleID = titleStyle
-			case currentRow == 7:
-				// Column header row
+			case currentRow == 7 || currentRow == 8:
+				// Column header rows (row 7 and row 8 for multi-column reports)
 				if currentCol == 1 {
 					styleID = columnHeaderLeftStyle
 				} else {
 					styleID = columnHeaderRightStyle
 				}
-			case currentRow >= 8:
-				// Data rows
+			case currentRow >= 9:
+				// Data rows (start at row 9 for multi-column reports)
 				if currentCol == 1 {
 					styleID = dataLeftStyle
 				} else {
