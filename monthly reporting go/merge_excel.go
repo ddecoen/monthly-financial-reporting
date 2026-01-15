@@ -217,6 +217,7 @@ func processXMLExcel(sourcePath string, dest *excelize.File, newSheetName string
 			Horizontal: "right",
 			Vertical:   "center",
 		},
+		CustomNumFmt: stringPtr(`"$"#,##0.00_);\("$"#,##0.00\)`),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create data right style: %w", err)
@@ -405,6 +406,7 @@ func copySheet(sourcePath string, dest *excelize.File, newSheetName string) erro
 			Horizontal: "right",
 			Vertical:   "center",
 		},
+		CustomNumFmt: stringPtr(`"$"#,##0.00_);\("$"#,##0.00\)`),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create data right style: %w", err)
@@ -478,4 +480,9 @@ func copySheet(sourcePath string, dest *excelize.File, newSheetName string) erro
 	}
 
 	return nil
+}
+
+// stringPtr returns a pointer to a string
+func stringPtr(s string) *string {
+	return &s
 }
